@@ -10,7 +10,8 @@ import (
 	"os/signal"
 	"time"
 
-	gorillaHandlers "github.com/gorilla/handlers"
+	"github.com/rs/cors"
+
 	"github.com/gorilla/mux"
 )
 
@@ -54,12 +55,12 @@ func main() {
 	registerUserRouter.HandleFunc("/registration", usersHandler.RegisterUser)
 	registerUserRouter.Use(usersHandler.MiddlewareUserDeserialization)
 
-	cors := gorillaHandlers.CORS(gorillaHandlers.AllowedMethods([]string{"*"}))
+	//cors := gorillaHandlers.CORS(gorillaHandlers.AllowedMethods([]string{"*"}))
 
 	//Initialize the server
 	server := http.Server{
 		Addr:         ":" + port,
-		Handler:      cors(router),
+		Handler:      cors.Default().Handler(router),
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
