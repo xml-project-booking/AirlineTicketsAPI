@@ -9,9 +9,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/rs/cors"
-
+	//"github.com/rs/cors"
+	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -29,7 +28,7 @@ func main() {
 
 	//Initialize the logger we are going to use, with prefix and datetime for every log
 	logger := log.New(os.Stdout, "[product-api] ", log.LstdFlags)
-	storeLogger := log.New(os.Stdout, "[patient-store] ", log.LstdFlags)
+	storeLogger := log.New(os.Stdout, "[user-store] ", log.LstdFlags)
 
 	// NoSQL: Initialize Product Repository store
 
@@ -51,20 +50,50 @@ func main() {
 
 	router.Use(usersHandler.MiddlewareContentTypeSet)
 
+	//Registration
 	registerUserRouter := router.Methods(http.MethodPost).Subrouter()
 	registerUserRouter.HandleFunc("/registration", usersHandler.RegisterUser)
 	registerUserRouter.Use(usersHandler.MiddlewareUserDeserialization)
 
+	getByEmailRouter := router.Methods(http.MethodGet).Subrouter()
+	getByEmailRouter.HandleFunc("/existsEmail/{email}", usersHandler.GetUserByEmail)
+
+	getByUsernameRouter := router.Methods(http.MethodGet).Subrouter()
+	getByUsernameRouter.HandleFunc("/existsUsername/{username}", usersHandler.GetUserByUsername)
+
+	//Login
+	loginUserRouter := router.Methods(http.MethodPost).Subrouter()
+	loginUserRouter.HandleFunc("/login", usersHandler.LoginUser)
+	loginUserRouter.Use(usersHandler.MiddlewareAuthDeserialization)
+	//Proba autorizacije
+	probaautRouter := router.Methods(http.MethodPost).Subrouter()
+	probaautRouter.HandleFunc("/proba", usersHandler.ProbaAut)
+	probaautRouter.Use(usersHandler.IsAuthorizedAdmin)
+
 	//cors := gorillaHandlers.CORS(gorillaHandlers.AllowedMethods([]string{"*"}))
 
-	//Initialize the server
+	headersOk := gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization",
+	"accept", "origin", "Cache-Control", "X-Requested-With"})
+	originsOk := gorillaHandlers.AllowedOrigins([]string{"*"})
+	methodsOk := gorillaHandlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+	cors := gorillaHandlers.CORS(headersOk, originsOk, methodsOk)
+	//Initialize the server 
 	server := http.Server{
 		Addr:         ":" + port,
-		Handler:      cors.Default().Handler(router),
+	 	Handler:      cors(router),
 		IdleTimeout:  120 * time.Second,
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 1 * time.Second,
+	 	ReadTimeout:  5 * time.Second,
+	 	WriteTimeout: 5 * time.Second,
 	}
+
+	//Initialize the server
+	// server := http.Server{
+	// 	Addr:         ":" + port,
+	// 	Handler:      cors.Default().Handler(router),
+	// 	IdleTimeout:  120 * time.Second,
+	// 	ReadTimeout:  1 * time.Second,
+	// 	WriteTimeout: 1 * time.Second,
+	// }
 
 	logger.Println("Server listening on port", port)
 	//Distribute all the connections to goroutines
