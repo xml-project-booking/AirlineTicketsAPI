@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
 	//"github.com/rs/cors"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -45,6 +46,19 @@ func main() {
 
 	usersHandler := handlers.NewUsersHandler(logger, storeUser)
 
+	storeFlight, err := repo.NewFlightRepo(timeoutContext, storeLogger)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer storeFlight.DisconnectFlightRepo(timeoutContext)
+
+	// NoSQL: Checking if the connection was established
+	storeFlight.PingFlightRepo()
+
+	//Initialize the handler and inject said logger
+
+	flightHandlers := handlers.NewFlightsHandler(logger, storeFlight)
+
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
 
@@ -70,20 +84,32 @@ func main() {
 	probaautRouter.HandleFunc("/proba", usersHandler.ProbaAut)
 	probaautRouter.Use(usersHandler.IsAuthorizedAdmin)
 
+	//create flight
+	createFlightRouter := router.Methods(http.MethodPost).Subrouter()
+	createFlightRouter.HandleFunc("/admin/create-flight", flightHandlers.CreateFlight)
+	createFlightRouter.Use(flightHandlers.MiddlewareFlightDeserialization)
+	//createFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
 	//cors := gorillaHandlers.CORS(gorillaHandlers.AllowedMethods([]string{"*"}))
-
+	//delete flight
+	deleteFlightRouter := router.Methods(http.MethodPost).Subrouter()
+	deleteFlightRouter.HandleFunc("/admin/delete-flight/{id}", flightHandlers.DeleteFlight)
+	//get flight
+	getAllFlightsRouter := router.Methods(http.MethodGet).Subrouter()
+	getAllFlightsRouter.HandleFunc("/admin/get-all-flights", flightHandlers.GetAllFlights)
+	//getAllFlightsRouter.Use(flightHandlers.MiddlewareFlightDeserialization)
+	//deleteFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization",
-	"accept", "origin", "Cache-Control", "X-Requested-With"})
+		"accept", "origin", "Cache-Control", "X-Requested-With"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"*"})
 	methodsOk := gorillaHandlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 	cors := gorillaHandlers.CORS(headersOk, originsOk, methodsOk)
-	//Initialize the server 
+	//Initialize the server
 	server := http.Server{
 		Addr:         ":" + port,
-	 	Handler:      cors(router),
+		Handler:      cors(router),
 		IdleTimeout:  120 * time.Second,
-	 	ReadTimeout:  5 * time.Second,
-	 	WriteTimeout: 5 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	//Initialize the server

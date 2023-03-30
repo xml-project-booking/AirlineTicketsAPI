@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"io"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,4 +21,20 @@ type Ticket struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	UserId   string             `bson:"userid,omitempty" json:"userid"`
 	FlightId string             `bson:"flightid,omitempty" json:"flightid"`
+}
+type Flights []*Flight
+
+func (u *Flights) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(u)
+}
+
+func (u *Flight) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(u)
+}
+
+func (u *Flight) FromJSON(r io.Reader) error {
+	d := json.NewDecoder(r)
+	return d.Decode(u)
 }

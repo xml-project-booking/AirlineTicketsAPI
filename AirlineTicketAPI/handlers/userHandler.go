@@ -4,15 +4,16 @@ import (
 	"Rest/model"
 	"Rest/repo"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"time"
-	"fmt"
 	"strings"
-	"golang.org/x/crypto/bcrypt"
-	"github.com/gorilla/mux"
+	"time"
+
 	"github.com/golang-jwt/jwt"
-	"encoding/json"
+	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type KeyProduct struct{}
@@ -101,7 +102,7 @@ func (u *UserHandler) GetUserByUsername(rw http.ResponseWriter, h *http.Request)
 	}
 }
 
-func (u *UserHandler) FindByEmail (email string) (*model.User, error){
+func (u *UserHandler) FindByEmail(email string) (*model.User, error) {
 	user, err := u.repo.GetByEmail(email)
 	if err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func (u *UserHandler) FindByEmail (email string) (*model.User, error){
 	return user, nil
 }
 
-func (u *UserHandler) FindByUsername (username string) (*model.User, error){
+func (u *UserHandler) FindByUsername(username string) (*model.User, error) {
 	user, err := u.repo.GetByUsername(username)
 	if err != nil {
 		return nil, err
@@ -166,7 +167,7 @@ func (u *UserHandler) LoginUser(rw http.ResponseWriter, h *http.Request) {
 	if user.Role == 1 {
 		stringRole = "ADMIN"
 	}
-	
+
 	validToken, err := GenerateJWT(user.Email, stringRole)
 	if err != nil {
 		http.Error(rw, "Failed to genetare token", http.StatusBadRequest)
@@ -182,7 +183,6 @@ func (u *UserHandler) LoginUser(rw http.ResponseWriter, h *http.Request) {
 	json.NewEncoder(rw).Encode(token)
 }
 
-
 func (u *UserHandler) UpdateUser(rw http.ResponseWriter, h *http.Request) {
 	vars := mux.Vars(h)
 	id := vars["id"]
@@ -193,7 +193,7 @@ func (u *UserHandler) UpdateUser(rw http.ResponseWriter, h *http.Request) {
 }
 
 func (u *UserHandler) ProbaAut(rw http.ResponseWriter, h *http.Request) {
-	if h.Header["Role"][0] != "ADMIN"{
+	if h.Header["Role"][0] != "ADMIN" {
 		http.Error(rw, "You're not admin", http.StatusUnauthorized)
 		return
 	}
@@ -252,12 +252,12 @@ func (u *UserHandler) IsAuthorizedAdmin(next http.Handler) http.Handler {
 			}
 			return mySigningKey, nil
 		})
-	
+
 		if err != nil {
 			http.Error(rw, "Your Token has been expired", http.StatusUnauthorized)
 			return
 		}
-	
+
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			if claims["role"] == "ADMIN" {
 				h.Header.Set("Role", "ADMIN")
@@ -275,16 +275,16 @@ func (u *UserHandler) IsAuthorizedUser(next http.Handler) http.Handler {
 		var mySigningKey = []byte("secretkey")
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("There was an error in parsing")
+				return nil, fmt.Errorf("there was an error in parsing")
 			}
 			return mySigningKey, nil
 		})
-	
+
 		if err != nil {
 			http.Error(rw, "Your Token has been expired", http.StatusUnauthorized)
 			return
 		}
-	
+
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			if claims["role"] == "USER" {
 				h.Header.Set("Role", "USER")
@@ -326,4 +326,3 @@ func GetJWT(r http.Header) string {
 	}
 	return ""
 }
-
