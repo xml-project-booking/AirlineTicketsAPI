@@ -98,6 +98,12 @@ func main() {
 	getAllFlightsRouter.HandleFunc("/admin/get-all-flights", flightHandlers.GetAllFlights)
 	//getAllFlightsRouter.Use(flightHandlers.MiddlewareFlightDeserialization)
 	//deleteFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
+
+	//TICKETS
+	//Buy tickets
+
+	//Get tickets for user
+
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization",
 		"accept", "origin", "Cache-Control", "X-Requested-With"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"*"})
