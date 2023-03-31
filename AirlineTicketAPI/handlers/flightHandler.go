@@ -51,8 +51,8 @@ func (u *FlightHandler) GetFlightById(rw http.ResponseWriter, h *http.Request) {
 	}
 
 	if flight == nil {
-		http.Error(rw, "Patient with given id not found", http.StatusNotFound)
-		u.logger.Printf("Patient with id: '%s' not found", id)
+		http.Error(rw, "Flight with given id not found", http.StatusNotFound)
+		u.logger.Printf("Flight with id: '%s' not found", id)
 		return
 	}
 
