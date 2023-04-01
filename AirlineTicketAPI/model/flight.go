@@ -18,13 +18,6 @@ type Flight struct {
 	Date      time.Time          `bson:"date,omitempty" json:"date"`
 }
 
-type Ticket struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserId        string             `bson:"userid,omitempty" json:"userid"`
-	FlightId      string             `bson:"flightid,omitempty" json:"flightid"`
-	NumberOfSeats int                `bson:"numberofseats" json:"numberofseats"`
-}
-
 func (t *Ticket) ToJSON(rw http.ResponseWriter) error {
 	e := json.NewEncoder(rw)
 	return e.Encode(t)
