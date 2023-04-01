@@ -59,6 +59,18 @@ func main() {
 
 	flightHandlers := handlers.NewFlightsHandler(logger, storeFlight)
 
+	//TICKET
+	storeTicket, err := repo.NewTicketRepo(timeoutContext, storeLogger)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer storeTicket.DisconnectTicketRepo(timeoutContext)
+
+	// NoSQL: Checking if the connection was established
+	storeTicket.PingTicketRepo()
+
+	ticketHandlers := handlers.NewTicketsHandler(logger, storeTicket)
+
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
 
@@ -96,8 +108,22 @@ func main() {
 	//get flight
 	getAllFlightsRouter := router.Methods(http.MethodGet).Subrouter()
 	getAllFlightsRouter.HandleFunc("/admin/get-all-flights", flightHandlers.GetAllFlights)
+	//get flight by id
+	getFlightByIdRouter := router.Methods(http.MethodGet).Subrouter()
+	getFlightByIdRouter.HandleFunc("/get-flight-byId/{id}", flightHandlers.GetFlightById)
+
 	//getAllFlightsRouter.Use(flightHandlers.MiddlewareFlightDeserialization)
 	//deleteFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
+
+	//TICKETS
+	//Buy tickets
+	createTicketRouter := router.Methods(http.MethodPost).Subrouter()
+	createTicketRouter.HandleFunc("/create-ticket", ticketHandlers.CreateTicket)
+	createTicketRouter.Use(ticketHandlers.MiddlewareTicketDeserialization)
+
+	//Get tickets for user
+
+	//
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization",
 		"accept", "origin", "Cache-Control", "X-Requested-With"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"*"})
