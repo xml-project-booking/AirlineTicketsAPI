@@ -156,10 +156,10 @@ func (ur *FlightRepo) Insert(flight *model.Flight) error {
 	return nil
 }
 
-func (ur *UserRepo) UpdateFlight(id string, flight *model.Flight) error {
+func (ur *FlightRepo) UpdateFlight(id string, flight *model.Flight) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	usersCollection := ur.getCollection()
+	flightCollection := ur.getCollection()
 
 	objID, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": objID}
@@ -167,7 +167,7 @@ func (ur *UserRepo) UpdateFlight(id string, flight *model.Flight) error {
 		"freeseats": flight.FreeSeats,
 		"price":     flight.Price,
 	}}
-	result, err := usersCollection.UpdateOne(ctx, filter, update)
+	result, err := flightCollection.UpdateOne(ctx, filter, update)
 	ur.logger.Printf("Documents matched: %v\n", result.MatchedCount)
 	ur.logger.Printf("Documents updated: %v\n", result.ModifiedCount)
 

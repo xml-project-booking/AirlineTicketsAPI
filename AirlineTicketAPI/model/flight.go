@@ -18,12 +18,6 @@ type Flight struct {
 	Date      time.Time          `bson:"date,omitempty" json:"date"`
 }
 
-type Ticket struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserId        string             `bson:"userid,omitempty" json:"userid"`
-	FlightId      string             `bson:"flightid,omitempty" json:"flightid"`
-	NumberOfSeats int                `bson:"numberofseats" json:"numberofseats"`
-}
 
 type SearchCriteria struct {
 	From         string `bson:"from" json:"from"`
@@ -37,10 +31,6 @@ func (t *Ticket) ToJSON(rw http.ResponseWriter) error {
 	return e.Encode(t)
 }
 
-func (t *Ticket) FromJSON(r io.Reader) error {
-	d := json.NewDecoder(r)
-	return d.Decode(t)
-}
 
 type Flights []*Flight
 

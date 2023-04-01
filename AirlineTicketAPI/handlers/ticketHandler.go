@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -14,12 +15,35 @@ import (
 type TicketHandler struct {
 	logger *log.Logger
 	// NoSQL: injecting product repository
-	repo *repo.TicketRepo
+
+	repo       *repo.TicketRepo
+	flightRepo *repo.FlightRepo
 }
 
 // Injecting the logger makes this code much more testable.
-func NewTicketsHandler(l *log.Logger, r *repo.TicketRepo) *TicketHandler {
-	return &TicketHandler{l, r}
+func NewTicketsHandler(l *log.Logger, r *repo.TicketRepo, f *repo.FlightRepo) *TicketHandler {
+	return &TicketHandler{l, r, f}
+}
+
+func (u *TicketHandler) GetAllTicketsByUserId(rw http.ResponseWriter, h *http.Request) {
+
+	ticketDTO := h.Context().Value(KeyProduct{}).(*model.Ticket)
+	log.Println("ID: " + ticketDTO.UserId)
+	tickets, err := u.repo.GetAllByUserId(ticketDTO.UserId)
+	if err != nil {
+		u.logger.Print("Database exception: ", err)
+	}
+
+	if tickets == nil {
+		return
+	}
+
+	err = tickets.ToJSON(rw)
+	if err != nil {
+		http.Error(rw, "Unable to convert to json", http.StatusInternalServerError)
+		u.logger.Fatal("Unable to convert to json :", err)
+		return
+	}
 }
 
 func (u *TicketHandler) GetTicketById(rw http.ResponseWriter, h *http.Request) {
@@ -46,25 +70,55 @@ func (u *TicketHandler) GetTicketById(rw http.ResponseWriter, h *http.Request) {
 }
 
 func (u *TicketHandler) CreateTicket(rw http.ResponseWriter, h *http.Request) {
+	log.Println("H: ")
 	ticketDTO := h.Context().Value(KeyProduct{}).(*model.Ticket)
+
 	ticket := model.Ticket{FlightId: ticketDTO.FlightId, UserId: ticketDTO.UserId, NumberOfSeats: ticketDTO.NumberOfSeats}
-	u.repo.Insert(&ticket)
-	rw.WriteHeader(http.StatusCreated)
-	json.NewEncoder(rw).Encode(ticket)
+	log.Println("FLIGHTID: " + ticket.FlightId + " | " + ticketDTO.FlightId)
+	flight, err := u.flightRepo.GetById(ticketDTO.FlightId)
+	if err != nil {
+		log.Fatalf("An error occurred while fetching the flight: %v", err)
+	}
+
+	if flight.Date.Before(time.Now()) {
+		log.Println("That flight has already departed")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if flight.FreeSeats < ticket.NumberOfSeats {
+		log.Println("That flight doesn't have enough available seats")
+		rw.WriteHeader(http.StatusNotAcceptable)
+		return
+	}
+
+	flight.FreeSeats -= ticket.NumberOfSeats
+	if err := u.flightRepo.UpdateFlight(ticketDTO.FlightId, flight); err != nil {
+		log.Fatalf("An error occurred while updating the flight: %v", err)
+	}
+
+	if err := u.repo.Insert(&ticket); err != nil {
+		log.Fatalf("An error occurred while inserting the ticket: %v", err)
+	}
+
 	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(rw).Encode(ticket); err != nil {
+		log.Fatalf("An error occurred while encoding the response: %v", err)
+	}
 }
 
 func (u *TicketHandler) MiddlewareTicketDeserialization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
-		user := &model.Ticket{}
-		err := user.FromJSON(h.Body)
+		ticket := &model.Ticket{}
+		err := ticket.FromJSON(h.Body)
 		if err != nil {
 			http.Error(rw, "Unable to decode json", http.StatusBadRequest)
 			u.logger.Fatal(err)
 			return
 		}
 
-		ctx := context.WithValue(h.Context(), KeyProduct{}, user)
+		ctx := context.WithValue(h.Context(), KeyProduct{}, ticket)
 		h = h.WithContext(ctx)
 
 		next.ServeHTTP(rw, h)

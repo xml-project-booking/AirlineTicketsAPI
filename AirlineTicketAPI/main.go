@@ -69,7 +69,7 @@ func main() {
 	// NoSQL: Checking if the connection was established
 	storeTicket.PingTicketRepo()
 
-	ticketHandlers := handlers.NewTicketsHandler(logger, storeTicket)
+	ticketHandlers := handlers.NewTicketsHandler(logger, storeTicket, storeFlight)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
@@ -121,10 +121,13 @@ func main() {
 	//TICKETS
 	//Buy tickets
 	createTicketRouter := router.Methods(http.MethodPost).Subrouter()
-	createTicketRouter.HandleFunc("/create-ticket", ticketHandlers.CreateTicket)
+	createTicketRouter.HandleFunc("/user/create-ticket", ticketHandlers.CreateTicket)
 	createTicketRouter.Use(ticketHandlers.MiddlewareTicketDeserialization)
 
 	//Get tickets for user
+	getTicketForUserRouter := router.Methods(http.MethodPost).Subrouter()
+	getTicketForUserRouter.HandleFunc("/user/get-tickets-by-userId", ticketHandlers.GetAllTicketsByUserId)
+	getTicketForUserRouter.Use(ticketHandlers.MiddlewareTicketDeserialization)
 
 	//
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization",
