@@ -15,6 +15,10 @@ type Ticket struct {
 
 type Tickets []*Ticket
 
+func (t *Ticket) FromJSON(r io.Reader) error {
+	d := json.NewDecoder(r)
+	return d.Decode(t)
+}
 func (u *Tickets) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)
 	return e.Encode(u)
