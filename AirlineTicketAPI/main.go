@@ -101,13 +101,16 @@ func main() {
 	createFlightRouter.HandleFunc("/admin/create-flight", flightHandlers.CreateFlight)
 	createFlightRouter.Use(flightHandlers.MiddlewareFlightDeserialization)
 	//createFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
-	//cors := gorillaHandlers.CORS(gorillaHandlers.AllowedMethods([]string{"*"}))
 	//delete flight
 	deleteFlightRouter := router.Methods(http.MethodPost).Subrouter()
 	deleteFlightRouter.HandleFunc("/admin/delete-flight/{id}", flightHandlers.DeleteFlight)
 	//get flight
 	getAllFlightsRouter := router.Methods(http.MethodGet).Subrouter()
 	getAllFlightsRouter.HandleFunc("/admin/get-all-flights", flightHandlers.GetAllFlights)
+	//search flights
+	searchFlightsRouter := router.Methods(http.MethodPost).Subrouter()
+	searchFlightsRouter.HandleFunc("/admin/search-flights", flightHandlers.SearchFlights)
+	searchFlightsRouter.Use(flightHandlers.MiddlewareSearchCriteriaDeserialization)
 	//get flight by id
 	getFlightByIdRouter := router.Methods(http.MethodGet).Subrouter()
 	getFlightByIdRouter.HandleFunc("/get-flight-byId/{id}", flightHandlers.GetFlightById)
@@ -140,15 +143,6 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-
-	//Initialize the server
-	// server := http.Server{
-	// 	Addr:         ":" + port,
-	// 	Handler:      cors.Default().Handler(router),
-	// 	IdleTimeout:  120 * time.Second,
-	// 	ReadTimeout:  1 * time.Second,
-	// 	WriteTimeout: 1 * time.Second,
-	// }
 
 	logger.Println("Server listening on port", port)
 	//Distribute all the connections to goroutines

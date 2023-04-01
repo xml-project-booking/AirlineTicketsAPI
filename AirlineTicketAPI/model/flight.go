@@ -18,15 +18,19 @@ type Flight struct {
 	Date      time.Time          `bson:"date,omitempty" json:"date"`
 }
 
+
+type SearchCriteria struct {
+	From         string `bson:"from" json:"from"`
+	To           string `bson:"to" json:"to"`
+	TicketNumber int    `bson:"number" json:"number"`
+	Date         string `bson:"date" json:"date"`
+}
+
 func (t *Ticket) ToJSON(rw http.ResponseWriter) error {
 	e := json.NewEncoder(rw)
 	return e.Encode(t)
 }
 
-func (t *Ticket) FromJSON(r io.Reader) error {
-	d := json.NewDecoder(r)
-	return d.Decode(t)
-}
 
 type Flights []*Flight
 
@@ -41,6 +45,15 @@ func (u *Flight) ToJSON(w io.Writer) error {
 }
 
 func (u *Flight) FromJSON(r io.Reader) error {
+	d := json.NewDecoder(r)
+	return d.Decode(u)
+}
+func (u *SearchCriteria) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(u)
+}
+
+func (u *SearchCriteria) FromJSON(r io.Reader) error {
 	d := json.NewDecoder(r)
 	return d.Decode(u)
 }

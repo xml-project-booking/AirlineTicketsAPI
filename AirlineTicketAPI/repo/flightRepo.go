@@ -89,6 +89,42 @@ func (ur *FlightRepo) GetAll() (model.Flights, error) {
 	}
 	return flights, nil
 }
+func (pr *FlightRepo) GetBySearchCriteria(search *model.SearchCriteria) (model.Flights, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	flightsCollection := pr.getCollection()
+	date, err := time.Parse(time.RFC3339, search.Date)
+	fromDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	toDate := time.Date(date.Year(), date.Month(), date.Day()+1, 0, 0, 0, 0, time.UTC)
+	var flights model.Flights
+	filter := bson.D{
+		{Key: "$and",
+			Value: bson.A{
+				bson.D{{Key: "to", Value: bson.D{{Key: "$regex", Value: search.To}}}},
+				bson.D{{Key: "from", Value: bson.D{{Key: "$regex", Value: search.From}}}},
+				bson.D{{Key: "freeseats", Value: bson.D{{Key: "$gt", Value: search.TicketNumber}}}},
+				bson.D{{Key: "date", Value: bson.M{
+					"$gt": fromDate,
+					"$lt": toDate,
+				}}},
+			},
+		},
+	}
+
+	patientsCursor, err := flightsCollection.Find(ctx, filter)
+
+	if err != nil {
+		pr.logger.Println(err)
+		return nil, err
+	}
+	if err = patientsCursor.All(ctx, &flights); err != nil {
+		pr.logger.Println(err)
+		return nil, err
+	}
+
+	return flights, nil
+}
 
 func (ur *FlightRepo) GetById(id string) (*model.Flight, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
