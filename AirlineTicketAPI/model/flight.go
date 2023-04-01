@@ -22,6 +22,13 @@ type Ticket struct {
 	UserId   string             `bson:"userid,omitempty" json:"userid"`
 	FlightId string             `bson:"flightid,omitempty" json:"flightid"`
 }
+
+type SearchCriteria struct {
+	From         string `bson:"from" json:"from"`
+	To           string `bson:"to" json:"to"`
+	TicketNumber int    `bson:"number" json:"number"`
+	Date         string `bson:"date" json:"date"`
+}
 type Flights []*Flight
 
 func (u *Flights) ToJSON(w io.Writer) error {
@@ -35,6 +42,15 @@ func (u *Flight) ToJSON(w io.Writer) error {
 }
 
 func (u *Flight) FromJSON(r io.Reader) error {
+	d := json.NewDecoder(r)
+	return d.Decode(u)
+}
+func (u *SearchCriteria) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(u)
+}
+
+func (u *SearchCriteria) FromJSON(r io.Reader) error {
 	d := json.NewDecoder(r)
 	return d.Decode(u)
 }

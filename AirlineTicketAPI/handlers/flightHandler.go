@@ -40,7 +40,27 @@ func (u *FlightHandler) GetAllFlights(rw http.ResponseWriter, h *http.Request) {
 		return
 	}
 }
+func (f *FlightHandler) SearchFlights(rw http.ResponseWriter, h *http.Request) {
+	searchDTO := h.Context().Value(KeyProduct{}).(*model.SearchCriteria)
+	search := model.SearchCriteria{To: searchDTO.To, From: searchDTO.From, TicketNumber: searchDTO.TicketNumber, Date: searchDTO.Date}
+	flights, err := f.repo.GetBySearchCriteria(&search)
+	f.logger.Println(searchDTO)
+	f.logger.Println(flights)
+	if err != nil {
+		f.logger.Print("Database exception: ", err)
+	}
 
+	if flights == nil {
+		return
+	}
+
+	err = flights.ToJSON(rw)
+	if err != nil {
+		http.Error(rw, "Unable to convert to json", http.StatusInternalServerError)
+		f.logger.Fatal("Unable to convert to json :", err)
+		return
+	}
+}
 func (u *FlightHandler) GetFlightById(rw http.ResponseWriter, h *http.Request) {
 	vars := mux.Vars(h)
 	id := vars["id"]
@@ -92,6 +112,22 @@ func (u *FlightHandler) MiddlewareFlightDeserialization(next http.Handler) http.
 		}
 
 		ctx := context.WithValue(h.Context(), KeyProduct{}, user)
+		h = h.WithContext(ctx)
+
+		next.ServeHTTP(rw, h)
+	})
+}
+func (u *FlightHandler) MiddlewareSearchCriteriaDeserialization(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
+		searchCriteria := &model.SearchCriteria{}
+		err := searchCriteria.FromJSON(h.Body)
+		if err != nil {
+			http.Error(rw, "Unable to decode json", http.StatusBadRequest)
+			u.logger.Fatal(err)
+			return
+		}
+
+		ctx := context.WithValue(h.Context(), KeyProduct{}, searchCriteria)
 		h = h.WithContext(ctx)
 
 		next.ServeHTTP(rw, h)

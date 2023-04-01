@@ -248,7 +248,7 @@ func (u *UserHandler) IsAuthorizedAdmin(next http.Handler) http.Handler {
 		var mySigningKey = []byte("secretkey")
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("There was an error in parsing")
+				return nil, fmt.Errorf("there was an error in parsing")
 			}
 			return mySigningKey, nil
 		})
