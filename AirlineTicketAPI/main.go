@@ -107,18 +107,15 @@ func main() {
 	//get flight
 	getAllFlightsRouter := router.Methods(http.MethodGet).Subrouter()
 	getAllFlightsRouter.HandleFunc("/admin/get-all-flights", flightHandlers.GetAllFlights)
-<<<<<<< HEAD
 	//search flights
 	searchFlightsRouter := router.Methods(http.MethodPost).Subrouter()
 	searchFlightsRouter.HandleFunc("/admin/search-flights", flightHandlers.SearchFlights)
 	searchFlightsRouter.Use(flightHandlers.MiddlewareSearchCriteriaDeserialization)
-=======
 	//get flight by id
 	getFlightByIdRouter := router.Methods(http.MethodGet).Subrouter()
 	getFlightByIdRouter.HandleFunc("/get-flight-byId/{id}", flightHandlers.GetFlightById)
 
 	//getAllFlightsRouter.Use(flightHandlers.MiddlewareFlightDeserialization)
->>>>>>> d94e098fd5960c0eb11fad4b8c1087bdf8b04b4e
 	//deleteFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
 
 	//TICKETS
