@@ -100,10 +100,11 @@ func main() {
 	createFlightRouter := router.Methods(http.MethodPost).Subrouter()
 	createFlightRouter.HandleFunc("/admin/create-flight", flightHandlers.CreateFlight)
 	createFlightRouter.Use(flightHandlers.MiddlewareFlightDeserialization)
-	//createFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
+	createFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
 	//delete flight
 	deleteFlightRouter := router.Methods(http.MethodPost).Subrouter()
 	deleteFlightRouter.HandleFunc("/admin/delete-flight/{id}", flightHandlers.DeleteFlight)
+	deleteFlightRouter.Use(usersHandler.IsAuthorizedAdmin)
 	//get flight
 	getAllFlightsRouter := router.Methods(http.MethodGet).Subrouter()
 	getAllFlightsRouter.HandleFunc("/admin/get-all-flights", flightHandlers.GetAllFlights)
