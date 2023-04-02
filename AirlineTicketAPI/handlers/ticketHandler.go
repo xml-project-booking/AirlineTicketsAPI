@@ -18,18 +18,19 @@ type TicketHandler struct {
 
 	repo       *repo.TicketRepo
 	flightRepo *repo.FlightRepo
+	userRepo   *repo.UserRepo
 }
 
 // Injecting the logger makes this code much more testable.
-func NewTicketsHandler(l *log.Logger, r *repo.TicketRepo, f *repo.FlightRepo) *TicketHandler {
-	return &TicketHandler{l, r, f}
+func NewTicketsHandler(l *log.Logger, r *repo.TicketRepo, f *repo.FlightRepo, u *repo.UserRepo) *TicketHandler {
+	return &TicketHandler{l, r, f, u}
 }
 
 func (u *TicketHandler) GetAllTicketsByUserId(rw http.ResponseWriter, h *http.Request) {
 
 	ticketDTO := h.Context().Value(KeyProduct{}).(*model.Ticket)
-	log.Println("ID: " + ticketDTO.UserId)
-	tickets, err := u.repo.GetAllByUserId(ticketDTO.UserId)
+	user, err := u.userRepo.GetByUsername(ticketDTO.UserId)
+	tickets, err := u.repo.GetAllByUserId(user.ID.Hex())
 	if err != nil {
 		u.logger.Print("Database exception: ", err)
 	}
@@ -72,8 +73,12 @@ func (u *TicketHandler) GetTicketById(rw http.ResponseWriter, h *http.Request) {
 func (u *TicketHandler) CreateTicket(rw http.ResponseWriter, h *http.Request) {
 	log.Println("H: ")
 	ticketDTO := h.Context().Value(KeyProduct{}).(*model.Ticket)
+	user, err := u.userRepo.GetByUsername(ticketDTO.UserId)
+	if err != nil {
+		log.Fatalf("An error occurred while fetching the user by username: %v", err)
+	}
 
-	ticket := model.Ticket{FlightId: ticketDTO.FlightId, UserId: ticketDTO.UserId, NumberOfSeats: ticketDTO.NumberOfSeats}
+	ticket := model.Ticket{FlightId: ticketDTO.FlightId, UserId: user.ID.Hex(), NumberOfSeats: ticketDTO.NumberOfSeats}
 	log.Println("FLIGHTID: " + ticket.FlightId + " | " + ticketDTO.FlightId)
 	flight, err := u.flightRepo.GetById(ticketDTO.FlightId)
 	if err != nil {
